@@ -69,6 +69,32 @@ class BasicBlock(nn.Module):
 
         return out
 
+class MappingBasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self, inplanes, planes, downsample=None, dilation=1):
+        super(MappingBasicBlock, self).__init__()
+        self.fc_dim = 1024
+        self.fc1 = nn.Linear(inplanes, self.fc_dim)
+        self.relu = nn.ReLU(inplace=True)
+        self.fc2 = nn.Linear(self.fc_dim, planes)
+        self.downsample = downsample
+
+    def forward(self, x):
+        residual = x
+
+        out = self.fc1(x)
+        out = self.relu(out)
+        out = self.fc2(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+        out = self.relu(out)
+
+        return out
+
 
 class Bottleneck(nn.Module):
     expansion = 4
