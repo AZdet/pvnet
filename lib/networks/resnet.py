@@ -75,9 +75,9 @@ class MappingBasicBlock(nn.Module):
     def __init__(self, inplanes, planes, downsample=None, dilation=1):
         super(MappingBasicBlock, self).__init__()
         self.fc_dim = 1024
-        self.fc1 = nn.Linear(inplanes, self.fc_dim)
+        self.fc1 = nn.Conv2d(inplanes, self.fc_dim, 1, 1)
         self.relu = nn.ReLU(inplace=True)
-        self.fc2 = nn.Linear(self.fc_dim, planes)
+        self.fc2 = nn.Conv2d(self.fc_dim, planes, 1, 1)
         self.downsample = downsample
 
     def forward(self, x):

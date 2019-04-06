@@ -7,7 +7,7 @@ from lib.networks.resnet import resnet18, resnet50, resnet34, MappingBasicBlock
 
 class Resnet18_8s_modified(nn.Module):
     def __init__(self, ver_dim, seg_dim, fcdim=256, s8dim=128, s4dim=64, s2dim=32, raw_dim=32):
-        super(Resnet18_8s, self).__init__()
+        super(Resnet18_8s_modified, self).__init__()
 
         # Load the pretrained weights, remove avg pool
         # layer and get the output stride of 8
@@ -51,16 +51,17 @@ class Resnet18_8s_modified(nn.Module):
         )
         self.up2storaw = nn.UpsamplingBilinear2d(scale_factor=2)
 
-        # TODO
-        feature_size = 1024
-        self.mapping_net = nn.Sequential([MappingBasicBlock(raw_dim, feature_size), MappingBasicBlock(feature_size, raw_dim)])
-
         self.convraw = nn.Sequential(
             nn.Conv2d(3+s2dim, raw_dim, 3, 1, 1, bias=False),
             nn.BatchNorm2d(raw_dim),
             nn.LeakyReLU(0.1,True),
             # nn.Conv2d(raw_dim, seg_dim+ver_dim, 1, 1)
         )
+
+        # TODO
+        feature_size = 1024
+        self.mapping_net = nn.Sequential([MappingBasicBlock(raw_dim, feature_size), MappingBasicBlock(feature_size, raw_dim)])
+
         self.final_fc = nn.Conv2d(raw_dim, seg_dim+ver_dim, 1, 1)
 
     def _normal_initialization(self, layer):
