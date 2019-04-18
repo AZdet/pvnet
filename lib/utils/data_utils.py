@@ -187,10 +187,11 @@ class LineModImageDB(object):
         self.val_fn='{}/val.txt'.format(cls_name)
 
         if has_render_set:
-            self.render_pkl=os.path.join(self.linemod_dir,'posedb','{}_render.pkl'.format(cls_name))
+            self.render_pkl=os.path.join(cfg.DATA_DIR,'posedb','{}_render.pkl'.format(cls_name))#(self.linemod_dir,'posedb','{}_render.pkl'.format(cls_name)), changed
             # prepare dataset
             if os.path.exists(self.render_pkl):
                 # read cached
+                # TODO maybe we should disable cache, or we change self.linemod_dir to self.data_dir
                 self.render_set=read_pickle(self.render_pkl)
             else:
                 # process render set
@@ -198,7 +199,7 @@ class LineModImageDB(object):
         else:
             self.render_set=[]
 
-        self.real_pkl=os.path.join(self.linemod_dir,'posedb','{}_real.pkl'.format(cls_name))
+        self.real_pkl=os.path.join(cfg.DATA_DIR,'posedb','{}_real.pkl'.format(cls_name))#self.linemod_dir
         if os.path.exists(self.real_pkl):
             # read cached
             self.real_set=read_pickle(self.real_pkl)
@@ -218,7 +219,7 @@ class LineModImageDB(object):
         self.cls_idx=cfg.linemod_cls_names.index(cls_name)
 
         if has_fuse_set:
-            self.fuse_pkl=os.path.join(cfg.LINEMOD,'posedb','{}_fuse.pkl'.format(cls_name))
+            self.fuse_pkl=os.path.join(cfg.DATA_DIR,'posedb','{}_fuse.pkl'.format(cls_name))#cfg.LINEMOD
             # prepare dataset
             if os.path.exists(self.fuse_pkl):
                 # read cached
