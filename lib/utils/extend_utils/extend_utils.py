@@ -246,8 +246,8 @@ if __name__=="__main__":
 
     image_db = LineModImageDB('duck', has_ro_set=False, has_ra_set=False, has_plane_set=False, has_render_set=False,
                               has_ms_set=False,has_fuse_set=False)
-    random.shuffle(image_db.real_set)
-    dataset = LineModDatasetRealAug(image_db.real_set[:5], data_prefix=image_db.linemod_dir,
+    random.shuffle(image_db.set_pkl)
+    dataset = LineModDatasetRealAug(image_db.set_pkl[:5], data_prefix=image_db.linemod_dir,
                                     vote_type=VotingType.Extreme, augment=False)
     sampler = RandomSampler(dataset)
     batch_sampler = ImageSizeBatchSampler(sampler, 5, False)
