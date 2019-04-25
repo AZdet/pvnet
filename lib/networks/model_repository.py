@@ -60,15 +60,22 @@ class Resnet18_8s_modified(nn.Module):
 
         # TODO
         feature_size = 1024
-        self.mapping_net = nn.Sequential([MappingBasicBlock(raw_dim, feature_size), MappingBasicBlock(feature_size, raw_dim)])
+        self.mapping_net = nn.Sequential(*[MappingBasicBlock(raw_dim, feature_size), MappingBasicBlock(feature_size, raw_dim, downsample=nn.Conv2d(feature_size, raw_dim))])
 
         self.final_fc = nn.Conv2d(raw_dim, seg_dim+ver_dim, 1, 1)
 
     def _normal_initialization(self, layer):
         layer.weight.data.normal_(0, 0.01)
         layer.bias.data.zero_()
-
-    def forward(self, x, feature_alignment=False):
+    
+    
+    """
+    3 ways:
+    1. f, h: synthetic  direct
+    2. f, g, h: real  mapped
+    3. f, g: mapping before_mapping mapping_result
+    """
+    def forward(self, x, mode, feature_alignment=False):
         x2s, x4s, x8s, x16s, x32s, xfc = self.resnet18_8s(x)
 
         fm=self.conv8s(torch.cat([xfc,x8s],1))
@@ -81,15 +88,22 @@ class Resnet18_8s_modified(nn.Module):
         fm=self.up2storaw(fm)
 
 
-        x=self.convraw(torch.cat([fm,x],1))
+        x=self.convraw(torch.cat([fm,x],1))   # f
+        if mode == "before_mapping":
+            return x
 
         # add mapping net
-        x = self.mapping_net(x)
+        if mode != "direct":
+            x = self.mapping_net(x)       # g
+            if mode == "mapping_result":
+                return x
 
         # split final fc from other conv 
         x=self.final_fc(x)
         seg_pred=x[:,:self.seg_dim,:,:]
-        ver_pred=x[:,self.seg_dim:,:,:]
+        ver_pred=x[:,self.seg_dim:,:,:]    # h
+        
+        assert(mode == "direct" or mode == "mapped")
 
         return seg_pred, ver_pred
 
