@@ -335,3 +335,143 @@ class ImageSizeBatchSampler(Sampler):
         else:
             return (len(self.sampler) + self.batch_size - 1) // self.batch_size
 
+
+
+class LineModDatasetAug(Dataset):
+    def __init__(self, imagedb, data_prefix=cfg.LINEMOD, vote_type=VotingType.BB8,
+                 augment=False, cfg=default_aug_cfg, background_mask_out=False, use_intrinsic=False,
+                 use_motion=False):
+        self.imagedb=imagedb
+        self.augment=augment
+        self.background_mask_out=background_mask_out
+        self.use_intrinsic=use_intrinsic
+        self.use_motion=use_motion
+        self.cfg=cfg
+
+        self.img_transforms=transforms.Compose([
+            transforms.ColorJitter(self.cfg['brightness'],self.cfg['contrast'],self.cfg['saturation'],self.cfg['hue']),
+            transforms.ToTensor(), # if image.dtype is np.uint8, then it will be divided by 255
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+        ])
+        self.test_img_transforms=transforms.Compose([
+            transforms.ToTensor(), # if image.dtype is np.uint8, then it will be divided by 255
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                std=[0.229, 0.224, 0.225])
+        ])
+
+        self.vote_type=vote_type
+        self.data_prefix=data_prefix
+
+    def __getitem__(self, index_tuple):
+        index, height, width = index_tuple
+
+        rgb_path_real = os.path.join(self.data_prefix,self.imagedb[index]['rgb_real_pth'])
+        mask_path_real = os.path.join(self.data_prefix,self.imagedb[index]['dpt_real_pth'])
+        rgb_path_renddeer = os.path.join(self.data_prefix,self.imagedb[index]['rgb_render_pth'])
+        mask_path_render = os.path.join(self.data_prefix,self.imagedb[index]['dpt_render_pth'])
+
+        pose_real = self.imagedb[index]['RT_real'].copy()
+        pose_render = self.imagedb[index]['RT_render'].copy()
+
+        rgb_real = read_rgb_np(rgb_path_real)
+        rgb_render = read_rgb_np(rgb_path_render)
+        mask_real = read_mask_np(mask_path_real)
+        mask_render = read_mask_np(mask_path_render)
+        #if self.imagedb[index]['rnd_typ']=='real' and len(mask.shape)==3:
+        assert(len(mask_real.shape)==3)
+        mask_real = np.asarray(np.sum(mask_real,2)>0, np.int32)
+        mask_render = np.asarray(np.sum(mask_render,2)>0, np.int32)
+        # if self.imagedb[index]['rnd_typ']=='fuse':
+        #     mask=np.asarray(mask==(cfg.linemod_cls_names.index(self.imagedb[index]['cls_typ'])+1),np.int32)
+
+        hcoords=VotingType.get_data_pts_2d(self.vote_type,self.imagedb[index])
+
+        if self.use_intrinsic:
+            K = torch.tensor(self.imagedb[index]['K'].astype(np.float32))
+
+        if self.augment:
+            rgb_real, mask_real, hcoords, rgb_render, mask_render = self.augmentation(rgb, mask, hcoords, height, width, rgb_render, mask_render)
+            
+
+
+        ver = compute_vertex_hcoords(mask, hcoords, self.use_motion)
+        ver=torch.tensor(ver, dtype=torch.float32).permute(2, 0, 1)
+        mask=torch.tensor(np.ascontiguousarray(mask),dtype=torch.int64)
+        ver_weight=mask.unsqueeze(0).float()
+
+        if self.augment: # and self.imagedb[index]['rnd_typ']!='real':
+            # if not real and do augmentation then jitter color
+            if self.cfg['blur'] and np.random.random()<0.5:
+                seed = np.random.choice([3,5,7,9])
+                blur_image(rgb, seed)
+                blur_image(rgb_render, seed)
+
+            if self.cfg['jitter']:
+                rgb=self.img_transforms(Image.fromarray(np.ascontiguousarray(rgb, np.uint8)))
+                rgb_render=self.img_transforms(Image.fromarray(np.ascontiguousarray(rgb_render, np.uint8)))
+            else:
+                rgb=self.test_img_transforms(Image.fromarray(np.ascontiguousarray(rgb, np.uint8)))
+                rgb_render=self.test_img_transforms(Image.fromarray(np.ascontiguousarray(rgb_render, np.uint8)))
+
+            if self.cfg['use_mask_out'] and np.random.random()<0.1:
+                rgb *= (mask[None, :, :]).float()
+                rgb_render *= (mask[None, :, :]).float()
+        else:
+            rgb=self.test_img_transforms(Image.fromarray(np.ascontiguousarray(rgb, np.uint8)))
+            rgb_render=self.test_img_transforms(Image.fromarray(np.ascontiguousarray(rgb_render, np.uint8)))
+
+        #if self.imagedb[index]['rnd_typ']=='fuse' and self.cfg['ignore_fuse_ms_vertex']: ver_weight*=0.0
+
+        pose=torch.tensor(pose.astype(np.float32))
+        hcoords=torch.tensor(hcoords.astype(np.float32))
+        if self.use_intrinsic:
+            return rgb, mask, rgb_render, mask_render, ver, ver_weight, pose, hcoords, K
+        else:
+            return rgb, mask, rgb_render, mask_render, ver, ver_weight, pose, hcoords
+
+    def __len__(self):
+        return len(self.imagedb)
+
+    def augmentation(self, img, mask, hcoords, height, width, img_render=None, mask_render=None):
+        foreground=np.sum(mask)
+        # randomly mask out to add occlusion
+        if self.cfg['mask'] and np.random.random() < 0.5:
+            img, mask = mask_out_instance(img, mask, self.cfg['min_mask'], self.cfg['max_mask'])
+            if img_render and mask_render:
+                img_render, mask_render = mask_out_instance(img_render, mask_render, self.cfg['min_mask'], self.cfg['max_mask'])
+
+        if foreground>0:
+            # randomly rotate around the center of the instance
+            if self.cfg['rotation']:
+                img, mask, hcoords, img_render, mask_render = rotate_instance(img, mask, hcoords, self.cfg['rot_ang_min'], self.cfg['rot_ang_max'], 
+                img_render, mask_render)
+
+            # randomly crop and resize
+            if self.cfg['crop']:
+                if not self.cfg['use_old']:
+                    # 1. Under 80% probability, we resize the image, which will ensure the size of instance is [hmin,hmax][wmin,wmax]
+                    #    otherwise, keep the image unchanged
+                    # 2. crop or padding the image to a fixed size
+                    img, mask, hcoords, img_render, mask_render = crop_resize_instance_v2(img, mask, hcoords, height, width, self.cfg['overlap_ratio'],
+                                                                 self.cfg['resize_hmin'], self.cfg['resize_hmax'],
+                                                                 self.cfg['resize_wmin'], self.cfg['resize_wmax'],
+                                                                 img_render, mask_render)
+                else:
+                    # 1. firstly crop a region which is [scale_min,scale_max]*[height,width], which ensures that
+                    #    the area of the intersection between the cropped region and the instance region is at least
+                    #    overlap_ratio**2 of instance region.
+                    # 2. if the region is larger than original image, then padding 0
+                    # 3. then resize the cropped image to [height, width] (bilinear for image, nearest for mask)
+                    img, mask, hcoords, img_render, mask_render = crop_resize_instance_v1(img, mask, hcoords, height, width, self.cfg['overlap_ratio'],
+                                                                 self.cfg['resize_ratio_min'], self.cfg['resize_ratio_max'],
+                                                                 img_render, mask_render)
+        else:
+            img, mask, img_render, mask_render = crop_or_padding_to_fixed_size(img, mask, height, width, img_render, mask_render)
+
+
+        # randomly flip
+        if self.cfg['flip'] and np.random.random() < 0.5:
+            img, mask, hcoords, img_render, mask_render = flip(img, mask, hcoords, img_render, mask_render)
+
+        return img, mask, hcoords, img_render, mask_render

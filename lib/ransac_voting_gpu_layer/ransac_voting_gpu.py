@@ -986,7 +986,7 @@ if __name__=="__main__":
     from lib.utils.data_utils import LineModImageDB
     from lib.utils.draw_utils import imagenet_to_uint8
     import numpy as np
-    train_set = LineModDatasetRealAug(LineModImageDB('cat',has_fuse_set=False,has_ms_set=False).real_set)
+    train_set = LineModDatasetRealAug(LineModImageDB('cat',has_fuse_set=False,has_ms_set=False).set_pkl)
     rgb, mask, vertex, vertex_weight, pose, gt_corners = train_set[np.random.randint(0,len(train_set)),480,640]
 
     h,w=mask.shape

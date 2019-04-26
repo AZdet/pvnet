@@ -21,6 +21,8 @@ from scipy.misc import imread,imsave
 from lib.utils.draw_utils import write_points, pts_to_img_pts, img_pts_to_pts_img
 
 
+    
+
 def read_rgb_np(rgb_path):
     ImageFile.LOAD_TRUNCATED_IMAGES = True
     img = Image.open(rgb_path).convert('RGB')
@@ -199,13 +201,13 @@ class LineModImageDB(object):
         else:
             self.render_set=[]
 
-        self.real_pkl=os.path.join(cfg.DATA_DIR,'posedb','{}_real.pkl'.format(cls_name))#self.linemod_dir
-        if os.path.exists(self.real_pkl):
+        self.set_pkl=os.path.join(cfg.DATA_DIR,'posedb','{}.pkl'.format(cls_name))#self.linemod_dir
+        if os.path.exists(self.set_pkl):
             # read cached
-            self.real_set=read_pickle(self.real_pkl)
+            self.set_pkl=read_pickle(self.set_pkl)
         else:
             # process real set
-            self.real_set=self.collect_real_set_info()
+            self.set_pkl=self.collect_set_info()
 
         # prepare train test split
         self.train_real_set=[]
@@ -229,15 +231,46 @@ class LineModImageDB(object):
                 self.fuse_set=self.collect_fuse_info()
         else:
             self.fuse_set=[]
+    
+    def collect_set_info(self):
+        database=[]    
+        projector=Projector()
+        modeldb=LineModModelDB()
+        render_dir = '{}/render'.format(cls_name)
+        img_num=len(os.listdir(os.path.join(self.linemod_dir,self.rgb_dir)))
+        for k in range(img_num):
+            data={}
+            data['rgb_real_pth']=os.path.join(self.rgb_dir, '{:06}.jpg'.format(k))
+            data['dpt_real_pth']=os.path.join(self.mask_dir, '{:04}.png'.format(k))
+            pose=read_pose(os.path.join(self.rt_dir, 'rot{}.rot'.format(k)),
+                           os.path.join(self.rt_dir, 'tra{}.tra'.format(k)))
+            pose_transformer = PoseTransformer(class_type=self.cls_name)
+            data['RT'] = pose_transformer.orig_pose_to_blender_pose(pose).astype(np.float32)
+            
+            data['rgb_pth']=os.path.join(render_dir,'{}.{}'.format(k,'jpg'))
+            data['RT']=read_pickle(os.path.join(self.linemod_dir,render_dir,'{}_RT.pkl'.format(k)))['RT']
+            data['cls_typ']=self.cls_name
+            #data['rnd_typ']='render'
+            data['corners']=projector.project(modeldb.get_corners_3d(self.cls_name),data['RT'],'linemod')
+            data['farthest']=projector.project(modeldb.get_farthest_3d(self.cls_name),data['RT'],'linemod')
+            for num in [4,12,16,20]:
+                data['farthest{}'.format(num)]=projector.project(modeldb.get_farthest_3d(self.cls_name,num),data['RT'],'linemod')
+            data['center']=projector.project(modeldb.get_centers_3d(self.cls_name)[None, :],data['RT'],'linemod')
+            data['small_bbox'] = projector.project(modeldb.get_small_bbox(self.cls_name), data['RT'], 'linemod')
+            axis_direct=np.concatenate([np.identity(3), np.zeros([3, 1])], 1).astype(np.float32)
+            data['van_pts']=projector.project_h(axis_direct, data['RT'], 'linemod')
+            database.append(data)
+
+        save_pickle(database,self.set_pkl)
+        return database
 
     def collect_render_set_info(self,pkl_file,render_dir,format='jpg'):
-        database=[]
+        database=[]    # blender standard
         projector=Projector()
         modeldb=LineModModelDB()
         for k in range(self.render_num):
             data={}
             data['rgb_pth']=os.path.join(render_dir,'{}.{}'.format(k,format))
-            data['dpt_pth']=os.path.join(render_dir,'{}_depth.png'.format(k))
             data['RT']=read_pickle(os.path.join(self.linemod_dir,render_dir,'{}_RT.pkl'.format(k)))['RT']
             data['cls_typ']=self.cls_name
             data['rnd_typ']='render'
@@ -254,7 +287,7 @@ class LineModImageDB(object):
         save_pickle(database,pkl_file)
         return database
 
-    def collect_real_set_info(self):
+    def collect_real_set_info(self):     # linemod standard
         database=[]
         projector=Projector()
         modeldb=LineModModelDB()
@@ -279,7 +312,7 @@ class LineModImageDB(object):
             data['van_pts']=projector.project_h(axis_direct, data['RT'], 'linemod')
             database.append(data)
 
-        save_pickle(database,self.real_pkl)
+        save_pickle(database,self.set_pkl)
         return database
 
     def collect_train_val_test_info(self):
@@ -292,7 +325,7 @@ class LineModImageDB(object):
         with open(os.path.join(self.linemod_dir,self.val_fn),'r') as f:
             val_fns=[line.strip().split('/')[-1] for line in f.readlines()]
 
-        for data in self.real_set:
+        for data in self.set_pkl:
             if data['rgb_pth'].split('/')[-1] in test_fns:
                 if data['rgb_pth'].split('/')[-1] in val_fns:
                     self.val_real_set.append(data)

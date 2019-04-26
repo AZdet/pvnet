@@ -52,25 +52,31 @@ def rotate(img, mask, hcoords, rot_ang_min, rot_ang_max):
     hcoords=np.matmul(hcoords, np.concatenate([R,last_row],0).transpose())
     return img, mask, hcoords
 
-def rotate_instance(img, mask, hcoords, rot_ang_min, rot_ang_max):
+def rotate_instance(img, mask, hcoords, rot_ang_min, rot_ang_max, img_render=None, mask_render=None):
     h,w=img.shape[0],img.shape[1]
     degree=np.random.uniform(rot_ang_min,rot_ang_max)
     hs,ws=np.nonzero(mask)
     R=cv2.getRotationMatrix2D((np.mean(ws),np.mean(hs)), degree, 1)
     mask = cv2.warpAffine(mask, R, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
     img=cv2.warpAffine(img,R,(w, h),flags=cv2.INTER_LINEAR,borderMode=cv2.BORDER_CONSTANT,borderValue=0)
+    if mask_render and img_render:
+        mask_render = cv2.warpAffine(mask_render, R, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+        img_render=cv2.warpAffine(img_render,R,(w, h),flags=cv2.INTER_LINEAR,borderMode=cv2.BORDER_CONSTANT,borderValue=0)
     last_row=np.asarray([[0,0,1]],np.float32)
     hcoords=np.matmul(hcoords, np.concatenate([R,last_row],0).transpose())
-    return img, mask, hcoords
+    return img, mask, hcoords, img_render, mask_render
 
-def flip(img, mask, hcoords):
+def flip(img, mask, hcoords, img_render=None, mask_render=None):
     img=np.flip(img,1)
     mask=np.flip(mask,1)
+    if img_render and mask_render:
+        img_render = np.flip(img_render, 1)
+        mask_render = np.flip(mask_render, 1)
     h,w=img.shape[0],img.shape[1]
     hcoords[:, 0]-= w / 2 * hcoords[:, 2]
     hcoords[:, 0]=-hcoords[:, 0]
     hcoords[:, 0]+= w / 2 * hcoords[:, 2]
-    return img, mask, hcoords
+    return img, mask, hcoords, img_render, mask_render
 
 def crop_or_padding(img, mask, hcoords, hratio, wratio):
     '''
@@ -157,7 +163,7 @@ def crop_or_padding_to_fixed_size_instance(img, mask, hcoords, th, tw, overlap_r
 
     return img, mask, hcoords
 
-def crop_or_padding_to_fixed_size(img, mask, th, tw):
+def crop_or_padding_to_fixed_size(img, mask, th, tw, img_render=None, mask_render=None):
     h,w,_=img.shape
     hpad,wpad=th>=h,tw>=w
 
@@ -181,8 +187,26 @@ def crop_or_padding_to_fixed_size(img, mask, th, tw):
         new_mask[hbeg:hbeg+nh,wbeg:wbeg+nw]=mask
 
         img, mask = new_img, new_mask
+    
+    if img_render and mask_render:
+        img_render=img_render[hbeg:hend, wbeg:wend]
+        mask_render=mask_render[hbeg:hend, wbeg:wend]
 
-    return img, mask
+        if hpad or wpad:
+            nh,nw,_=img.shape
+            new_img=np.zeros([th,tw,3],dtype=img.dtype)
+            new_mask=np.zeros([th,tw],dtype=mask.dtype)
+
+            hbeg=0 if not hpad else (th-h)//2
+            wbeg=0 if not wpad else (tw-w)//2
+
+            new_img[hbeg:hbeg+nh,wbeg:wbeg+nw]=img_render
+            new_mask[hbeg:hbeg+nh,wbeg:wbeg+nw]=mask_render
+
+            img_render, mask_render = new_img, new_mask
+
+
+    return img, mask, img_render, mask_render
 
 def mask_out_instance(img, mask, min_side=0.1, max_side=0.3):
     ys,xs=np.nonzero(mask)
@@ -248,7 +272,8 @@ def compute_resize_range(mask,hmin,hmax,wmin,wmax):
 
 #### higher level api #####
 def crop_resize_instance_v1(img, mask, hcoords, imheight, imwidth,
-                            overlap_ratio=0.5, ratio_min=0.8, ratio_max=1.2):
+                            overlap_ratio=0.5, ratio_min=0.8, ratio_max=1.2, 
+                            img_render=None, mask_render=None):
     '''
 
     crop a region with [imheight*resize_ratio,imwidth*resize_ratio]
@@ -267,19 +292,24 @@ def crop_resize_instance_v1(img, mask, hcoords, imheight, imwidth,
     target_height=int(imheight*resize_ratio)
     target_width=int(imwidth*resize_ratio)
 
-    img, mask, hcoords = crop_or_padding_to_fixed_size_instance(
-        img, mask, hcoords, target_height, target_width, overlap_ratio)
+    img, mask, hcoords, img_render, mask_render = crop_or_padding_to_fixed_size_instance(
+        img, mask, hcoords, target_height, target_width, overlap_ratio, img_render, mask_render)
 
     img = cv2.resize(img, (imwidth, imheight), interpolation=cv2.INTER_LINEAR)
     mask = cv2.resize(mask, (imwidth, imheight), interpolation=cv2.INTER_NEAREST)
 
+    if img_render and mask_render:
+        img_render = cv2.resize(img_render, (imwidth, imheight), interpolation=cv2.INTER_LINEAR)
+        mask_render = cv2.resize(mask_render, (imwidth, imheight), interpolation=cv2.INTER_NEAREST)
+
     hcoords[:, 0] = hcoords[:, 0] / resize_ratio
     hcoords[:, 1] = hcoords[:, 1] / resize_ratio
 
-    return img, mask, hcoords
+    return img, mask, hcoords, img_render, mask_render
 
 def crop_resize_instance_v2(img, mask, hcoords, imheight, imwidth,
-                            overlap_ratio=0.5, hmin=30, hmax=135, wmin=30, wmax=130):
+                            overlap_ratio=0.5, hmin=30, hmax=135, wmin=30, wmax=130,
+                            img_render=None, mask_render=None):
     '''
 
     crop a region with [imheight*resize_ratio,imwidth*resize_ratio]
@@ -304,13 +334,17 @@ def crop_resize_instance_v2(img, mask, hcoords, imheight, imwidth,
         img=cv2.resize(img,(target_width,target_height),interpolation=cv2.INTER_LINEAR)
         mask=cv2.resize(mask,(target_width,target_height),interpolation=cv2.INTER_NEAREST)
 
+        if img_render and mask_render:
+            img_render=cv2.resize(img_render,(target_width,target_height),interpolation=cv2.INTER_LINEAR)
+            mask_render=cv2.resize(mask_render,(target_width,target_height),interpolation=cv2.INTER_NEAREST)
+
         hcoords[:, 0] = hcoords[:, 0] * resize_ratio
         hcoords[:, 1] = hcoords[:, 1] * resize_ratio
 
-    img, mask, hcoords=crop_or_padding_to_fixed_size_instance(
-        img,mask,hcoords,imheight,imwidth,overlap_ratio)
+    img, mask, hcoords, img_render, mask_render=crop_or_padding_to_fixed_size_instance(
+        img,mask,hcoords,imheight,imwidth,overlap_ratio, img_render, mask_render)
 
-    return img, mask, hcoords
+    return img, mask, hcoords, img_render, mask_render
 
 def resize_with_crop_or_pad_to_fixed_size(img,mask,hcoords,ratio):
     h,w,_=img.shape
