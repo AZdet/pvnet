@@ -411,7 +411,7 @@ def train_net():
                                       has_render_set=False,
                                       has_fuse_set=False)
             test_db = image_db.test_real_set + image_db.val_real_set
-            test_set = LineModDatasetRealAug(test_db,
+            test_set = LineModDatasetAug(test_db,
                                              cfg.LINEMOD,
                                              vote_type,
                                              augment=False,
