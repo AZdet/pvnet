@@ -369,7 +369,7 @@ class LineModDatasetAug(Dataset):
         rgb_path_real = os.path.join(self.data_prefix,self.imagedb[index]['rgb_real_pth'])
         mask_path_real = os.path.join(self.data_prefix,self.imagedb[index]['dpt_real_pth'])
         rgb_path_renddeer = os.path.join(self.data_prefix,self.imagedb[index]['rgb_render_pth'])
-        mask_path_render = os.path.join(self.data_prefix,self.imagedb[index]['dpt_render_pth'])
+        mask_path_render = os.path.join(self.data_prefix,self.imagedb[index]['dpt_real_pth'])
 
         pose_real = self.imagedb[index]['RT_real'].copy()
         pose_render = self.imagedb[index]['RT_render'].copy()
