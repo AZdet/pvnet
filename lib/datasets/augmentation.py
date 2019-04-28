@@ -59,7 +59,7 @@ def rotate_instance(img, mask, hcoords, rot_ang_min, rot_ang_max, img_render=Non
     R=cv2.getRotationMatrix2D((np.mean(ws),np.mean(hs)), degree, 1)
     mask = cv2.warpAffine(mask, R, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
     img=cv2.warpAffine(img,R,(w, h),flags=cv2.INTER_LINEAR,borderMode=cv2.BORDER_CONSTANT,borderValue=0)
-    if mask_render and img_render:
+    if mask_render != None and img_render != None:
         mask_render = cv2.warpAffine(mask_render, R, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
         img_render=cv2.warpAffine(img_render,R,(w, h),flags=cv2.INTER_LINEAR,borderMode=cv2.BORDER_CONSTANT,borderValue=0)
     last_row=np.asarray([[0,0,1]],np.float32)
