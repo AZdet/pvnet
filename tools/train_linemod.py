@@ -177,15 +177,15 @@ class MappingNetWrapper(nn.Module):
     def forward(self, image, mask, image_render, vertex, vertex_weights):
         ratio = train_cfg['vertex_loss_ratio']
         seq_pred, vertex_pred = self.net(image_render, 'direct')
-        loss1, _, _ = compute_loss(seq_pred, vertex_pred, mask, verterx_render,
+        loss1, _, _ = self.compute_loss(seq_pred, vertex_pred, mask, verterx_render,
                                    vertex_weights, ratio)
         seq_pred_mapped, vertex_pred_mapped = self.net(image, 'mapped')
-        loss2, loss_seg, loss_vertex = compute_loss(seq_pred_mapped,
+        loss2, loss_seg, loss_vertex = self.compute_loss(seq_pred_mapped,
                                                     vertex_pred_mapped, mask,
                                                     vertex, vertex_weights,
                                                     ratio)
         no_mapping_render = self.net(image_render, 'before_mapping')
-        mapping_result = net(image, 'mapping_result')
+        mapping_result = self.net(image, 'mapping_result')
         square_loss = nn.MSECriterion()
         loss3 = square_loss(no_mapping_render, mapping_result)
 
