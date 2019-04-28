@@ -366,8 +366,8 @@ class LineModDatasetAug(Dataset):
     def __getitem__(self, index_tuple):
         index, height, width = index_tuple
 
-        rgb_path_real = os.path.join(self.data_prefix,self.imagedb[index]['rgb_real_pth'])
-        mask_path_real = os.path.join(self.data_prefix,self.imagedb[index]['dpt_real_pth'])
+        rgb_path_real = os.path.join(self.data_prefix,self.imagedb[index]['rgb_pth'])
+        mask_path_real = os.path.join(self.data_prefix,self.imagedb[index]['dpt_pth'])
         rgb_path_renddeer = os.path.join(self.data_prefix,self.imagedb[index]['rgb_render_pth'])
         mask_path_render = os.path.join(self.data_prefix,self.imagedb[index]['dpt_real_pth'])
 

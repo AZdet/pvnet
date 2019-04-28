@@ -7,7 +7,7 @@ sys.path.append('..')
 from lib.ransac_voting_gpu_layer.ransac_voting_gpu import ransac_voting_layer_v3, \
     estimate_voting_distribution_with_mean, ransac_voting_layer_v5, ransac_motion_voting
 from lib.networks.model_repository import *
-from lib.datasets.linemod_dataset import LineModDatasetRealAug, ImageSizeBatchSampler, VotingType
+from lib.datasets.linemod_dataset import LineModDatasetAug, ImageSizeBatchSampler, VotingType
 from lib.utils.data_utils import LineModImageDB, OcclusionLineModImageDB, TruncatedLineModImageDB
 from lib.utils.arg_utils import args
 from lib.utils.draw_utils import visualize_bounding_box, imagenet_to_uint8, visualize_mask, visualize_points, img_pts_to_pts_img
@@ -158,6 +158,7 @@ class UncertaintyEvalWrapper(nn.Module):
 
 class MappingNetWrapper(nn.Module):
     def __init__(self, net):
+        super(MappingNetWrapper, self).__init__()
         self.net = net
 
     @staticmethod
@@ -488,7 +489,7 @@ def train_net():
         #     train_db+=image_db.train_real_set
         # if train_cfg['use_fuse']:
         #     train_db+=image_db.fuse_set
-        train_db = image_db
+        train_db = image_db.train_real_set
 
         train_set = LineModDatasetAug(train_db,
                                       cfg.LINEMOD,

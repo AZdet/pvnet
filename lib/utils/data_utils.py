@@ -236,12 +236,12 @@ class LineModImageDB(object):
         database=[]    
         projector=Projector()
         modeldb=LineModModelDB()
-        render_dir = '{}/renders'.format(cls_name)
+        render_dir = '{}/renders'.format(self.cls_name)
         img_num=len(os.listdir(os.path.join(self.linemod_dir,self.rgb_dir)))
         for k in range(img_num):
             data={}
-            data['rgb_real_pth']=os.path.join(self.rgb_dir, '{:06}.jpg'.format(k))
-            data['dpt_real_pth']=os.path.join(self.mask_dir, '{:04}.png'.format(k))
+            data['rgb_pth']=os.path.join(self.rgb_dir, '{:06}.jpg'.format(k))
+            data['dpt_pth']=os.path.join(self.mask_dir, '{:04}.png'.format(k))
             pose=read_pose(os.path.join(self.rt_dir, 'rot{}.rot'.format(k)),
                            os.path.join(self.rt_dir, 'tra{}.tra'.format(k)))
             pose_transformer = PoseTransformer(class_type=self.cls_name)
