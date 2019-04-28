@@ -121,7 +121,7 @@ def crop_or_padding(img, mask, hcoords, hratio, wratio):
 
     return out_img,out_mask,hcoords,
 
-def crop_or_padding_to_fixed_size_instance(img, mask, hcoords, th, tw, overlap_ratio=0.5):
+def crop_or_padding_to_fixed_size_instance(img, mask, hcoords, th, tw, overlap_ratio=0.5, img_render=None, mask_render=None):
     h,w,_=img.shape
     hs,ws=np.nonzero(mask)
 
@@ -142,6 +142,8 @@ def crop_or_padding_to_fixed_size_instance(img, mask, hcoords, th, tw, overlap_r
 
     img=img[hbeg:hend, wbeg:wend]
     mask=mask[hbeg:hend, wbeg:wend]
+    if img_render.any() != None:
+        img_render = img_render[hbeg:hend, wbeg:wend]
 
     hcoords[:, 0]-=wbeg*hcoords[:, 2]
     hcoords[:, 1]-=hbeg*hcoords[:, 2]
@@ -156,12 +158,18 @@ def crop_or_padding_to_fixed_size_instance(img, mask, hcoords, th, tw, overlap_r
 
         new_img[hbeg:hbeg+nh,wbeg:wbeg+nw]=img
         new_mask[hbeg:hbeg+nh,wbeg:wbeg+nw]=mask
+
+        if img_render.any() != None:
+            new_img_render=np.zeros([th,tw,3],dtype=img.dtype)
+            new_img_render[hbeg:hbeg+nh,wbeg:wbeg+nw]=img_render
+            img_render = new_img_render
+
         hcoords[:, 0]+=wbeg*hcoords[:, 2]
         hcoords[:, 1]+=hbeg*hcoords[:, 2]
 
         img, mask = new_img, new_mask
 
-    return img, mask, hcoords
+    return img, mask, hcoords, img_render, mask
 
 def crop_or_padding_to_fixed_size(img, mask, th, tw, img_render=None, mask_render=None):
     h,w,_=img.shape
