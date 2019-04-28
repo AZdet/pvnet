@@ -59,7 +59,7 @@ def rotate_instance(img, mask, hcoords, rot_ang_min, rot_ang_max, img_render=Non
     R=cv2.getRotationMatrix2D((np.mean(ws),np.mean(hs)), degree, 1)
     mask = cv2.warpAffine(mask, R, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
     img=cv2.warpAffine(img,R,(w, h),flags=cv2.INTER_LINEAR,borderMode=cv2.BORDER_CONSTANT,borderValue=0)
-    if mask_render != None and img_render != None:
+    if mask_render.any() != None and img_render.any() != None:
         mask_render = cv2.warpAffine(mask_render, R, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
         img_render=cv2.warpAffine(img_render,R,(w, h),flags=cv2.INTER_LINEAR,borderMode=cv2.BORDER_CONSTANT,borderValue=0)
     last_row=np.asarray([[0,0,1]],np.float32)
@@ -69,7 +69,7 @@ def rotate_instance(img, mask, hcoords, rot_ang_min, rot_ang_max, img_render=Non
 def flip(img, mask, hcoords, img_render=None, mask_render=None):
     img=np.flip(img,1)
     mask=np.flip(mask,1)
-    if img_render != None and mask_render != None:
+    if img_render.any() != None and mask_render.any() != None:
         img_render = np.flip(img_render, 1)
         mask_render = np.flip(mask_render, 1)
     h,w=img.shape[0],img.shape[1]
@@ -188,7 +188,7 @@ def crop_or_padding_to_fixed_size(img, mask, th, tw, img_render=None, mask_rende
 
         img, mask = new_img, new_mask
     
-    if img_render != None and mask_render != None:
+    if img_render.any() != None and mask_render.any() != None:
         img_render=img_render[hbeg:hend, wbeg:wend]
         mask_render=mask_render[hbeg:hend, wbeg:wend]
 
@@ -298,7 +298,7 @@ def crop_resize_instance_v1(img, mask, hcoords, imheight, imwidth,
     img = cv2.resize(img, (imwidth, imheight), interpolation=cv2.INTER_LINEAR)
     mask = cv2.resize(mask, (imwidth, imheight), interpolation=cv2.INTER_NEAREST)
 
-    if img_render != None and mask_render != None:
+    if img_render.any() != None and mask_render.any() != None:
         img_render = cv2.resize(img_render, (imwidth, imheight), interpolation=cv2.INTER_LINEAR)
         mask_render = cv2.resize(mask_render, (imwidth, imheight), interpolation=cv2.INTER_NEAREST)
 
@@ -334,7 +334,7 @@ def crop_resize_instance_v2(img, mask, hcoords, imheight, imwidth,
         img=cv2.resize(img,(target_width,target_height),interpolation=cv2.INTER_LINEAR)
         mask=cv2.resize(mask,(target_width,target_height),interpolation=cv2.INTER_NEAREST)
 
-        if img_render != None and mask_render != None:
+        if img_render.any() != None and mask_render.any() != None:
             img_render=cv2.resize(img_render,(target_width,target_height),interpolation=cv2.INTER_LINEAR)
             mask_render=cv2.resize(mask_render,(target_width,target_height),interpolation=cv2.INTER_NEAREST)
 

@@ -438,7 +438,7 @@ class LineModDatasetAug(Dataset):
         # randomly mask out to add occlusion
         if self.cfg['mask'] and np.random.random() < 0.5:
             img, mask = mask_out_instance(img, mask, self.cfg['min_mask'], self.cfg['max_mask'])
-            if img_render != None and mask_render != None:
+            if img_render.any() != None and mask_render.any() != None:
                 img_render, mask_render = mask_out_instance(img_render, mask_render, self.cfg['min_mask'], self.cfg['max_mask'])
 
         if foreground>0:
