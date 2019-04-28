@@ -236,7 +236,7 @@ class LineModImageDB(object):
         database=[]    
         projector=Projector()
         modeldb=LineModModelDB()
-        render_dir = '{}/renders'.format(self.cls_name)
+        render_dir = 'renders/{}'.format(self.cls_name)
         img_num=len(os.listdir(os.path.join(self.linemod_dir,self.rgb_dir)))
         for k in range(img_num):
             data={}
