@@ -60,7 +60,7 @@ class Resnet18_8s_modified(nn.Module):
 
         # TODO
         feature_size = 1024
-        self.mapping_net = nn.Sequential(*[MappingBasicBlock(raw_dim, feature_size), MappingBasicBlock(feature_size, raw_dim, downsample=nn.Conv2d(feature_size, raw_dim))])
+        self.mapping_net = nn.Sequential(*[MappingBasicBlock(raw_dim, feature_size, downsample=nn.Conv2d( raw_dim, feature_size)), MappingBasicBlock(feature_size, raw_dim, downsample=nn.Conv2d(feature_size, raw_dim, 1))])
 
         self.final_fc = nn.Conv2d(raw_dim, seg_dim+ver_dim, 1, 1)
 
