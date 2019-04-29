@@ -178,7 +178,7 @@ class LineModImageDB(object):
         # some dirs for processing
         os.path.join(cfg.LINEMOD,'posedb','{}_render.pkl'.format(cls_name))
         self.linemod_dir=cfg.LINEMOD
-        self.render_dir='renders/{}'.format(cls_name)
+        self.render_dir='{}/renders'.format(cls_name)
         self.rgb_dir='{}/JPEGImages'.format(cls_name)
         self.mask_dir='{}/mask'.format(cls_name)
         self.rt_dir=os.path.join(cfg.DATA_DIR,'LINEMOD_ORIG',cls_name,'data')
@@ -236,19 +236,19 @@ class LineModImageDB(object):
         database=[]    
         projector=Projector()
         modeldb=LineModModelDB()
-        render_dir = '{}/render'.format(cls_name)
+        render_dir = 'renders/{}'.format(self.cls_name)
         img_num=len(os.listdir(os.path.join(self.linemod_dir,self.rgb_dir)))
         for k in range(img_num):
             data={}
-            data['rgb_real_pth']=os.path.join(self.rgb_dir, '{:06}.jpg'.format(k))
-            data['dpt_real_pth']=os.path.join(self.mask_dir, '{:04}.png'.format(k))
+            data['rgb_pth']=os.path.join(self.rgb_dir, '{:06}.jpg'.format(k))
+            data['dpt_pth']=os.path.join(self.mask_dir, '{:04}.png'.format(k))
             pose=read_pose(os.path.join(self.rt_dir, 'rot{}.rot'.format(k)),
                            os.path.join(self.rt_dir, 'tra{}.tra'.format(k)))
             pose_transformer = PoseTransformer(class_type=self.cls_name)
             data['RT'] = pose_transformer.orig_pose_to_blender_pose(pose).astype(np.float32)
             
-            data['rgb_pth']=os.path.join(render_dir,'{}.{}'.format(k,'jpg'))
-            data['RT']=read_pickle(os.path.join(self.linemod_dir,render_dir,'{}_RT.pkl'.format(k)))['RT']
+            data['rgb_render_pth']=os.path.join(render_dir,'{}.{}'.format(k,'jpg'))
+            #data['RT']=read_pickle(os.path.join(self.linemod_dir,render_dir,'{}_RT.pkl'.format(k)))['RT']
             data['cls_typ']=self.cls_name
             #data['rnd_typ']='render'
             data['corners']=projector.project(modeldb.get_corners_3d(self.cls_name),data['RT'],'linemod')

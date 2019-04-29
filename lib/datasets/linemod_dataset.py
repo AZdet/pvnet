@@ -366,21 +366,21 @@ class LineModDatasetAug(Dataset):
     def __getitem__(self, index_tuple):
         index, height, width = index_tuple
 
-        rgb_path_real = os.path.join(self.data_prefix,self.imagedb[index]['rgb_real_pth'])
-        mask_path_real = os.path.join(self.data_prefix,self.imagedb[index]['dpt_real_pth'])
-        rgb_path_renddeer = os.path.join(self.data_prefix,self.imagedb[index]['rgb_render_pth'])
-        mask_path_render = os.path.join(self.data_prefix,self.imagedb[index]['dpt_render_pth'])
+        rgb_path_real = os.path.join(self.data_prefix,self.imagedb[index]['rgb_pth'])
+        mask_path_real = os.path.join(self.data_prefix,self.imagedb[index]['dpt_pth'])
+        rgb_path_render = os.path.join(cfg.DATA_DIR,self.imagedb[index]['rgb_render_pth'])
+        mask_path_render = os.path.join(self.data_prefix,self.imagedb[index]['dpt_pth'])
 
-        pose_real = self.imagedb[index]['RT_real'].copy()
-        pose_render = self.imagedb[index]['RT_render'].copy()
+        pose = self.imagedb[index]['RT'].copy()
+        pose_render = self.imagedb[index]['RT'].copy()
 
-        rgb_real = read_rgb_np(rgb_path_real)
+        rgb = read_rgb_np(rgb_path_real)
         rgb_render = read_rgb_np(rgb_path_render)
-        mask_real = read_mask_np(mask_path_real)
+        mask = read_mask_np(mask_path_real)
         mask_render = read_mask_np(mask_path_render)
         #if self.imagedb[index]['rnd_typ']=='real' and len(mask.shape)==3:
-        assert(len(mask_real.shape)==3)
-        mask_real = np.asarray(np.sum(mask_real,2)>0, np.int32)
+        assert(len(mask.shape)==3)
+        mask = np.asarray(np.sum(mask,2)>0, np.int32)
         mask_render = np.asarray(np.sum(mask_render,2)>0, np.int32)
         # if self.imagedb[index]['rnd_typ']=='fuse':
         #     mask=np.asarray(mask==(cfg.linemod_cls_names.index(self.imagedb[index]['cls_typ'])+1),np.int32)
@@ -391,7 +391,7 @@ class LineModDatasetAug(Dataset):
             K = torch.tensor(self.imagedb[index]['K'].astype(np.float32))
 
         if self.augment:
-            rgb_real, mask_real, hcoords, rgb_render, mask_render = self.augmentation(rgb, mask, hcoords, height, width, rgb_render, mask_render)
+            rgb, mask, hcoords, rgb_render, mask_render = self.augmentation(rgb, mask, hcoords, height, width, rgb_render, mask_render)
             
 
 
@@ -438,7 +438,7 @@ class LineModDatasetAug(Dataset):
         # randomly mask out to add occlusion
         if self.cfg['mask'] and np.random.random() < 0.5:
             img, mask = mask_out_instance(img, mask, self.cfg['min_mask'], self.cfg['max_mask'])
-            if img_render and mask_render:
+            if img_render.any() != None and mask_render.any() != None:
                 img_render, mask_render = mask_out_instance(img_render, mask_render, self.cfg['min_mask'], self.cfg['max_mask'])
 
         if foreground>0:
