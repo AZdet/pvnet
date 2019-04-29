@@ -62,8 +62,11 @@ seg_loss_rec = AverageMeter()
 ver_loss_rec = AverageMeter()
 precision_rec = AverageMeter()
 recall_rec = AverageMeter()
-recs = [seg_loss_rec, ver_loss_rec, precision_rec, recall_rec]
-recs_names = ['scalar/seg', 'scalar/ver', 'scalar/precision', 'scalar/recall']
+loss1 = AverageMeter()
+loss2 = AverageMeter()
+loss3 = AverageMeter()
+recs = [seg_loss_rec, ver_loss_rec, precision_rec, recall_rec, loss1, loss2, loss3]
+recs_names = ['scalar/seg_loss', 'scalar/ver_loss', 'scalar/precision', 'scalar/recall', 'scalar/loss1', 'scalar/loss2', 'scalar/loss3']
 
 data_time = AverageMeter()
 batch_time = AverageMeter()
@@ -218,17 +221,17 @@ def train(net, optimizer, dataloader, epoch):
         # vals=(loss_seg,loss_vertex,precision,recall)
         # for rec,val in zip(recs,vals):
         #     rec.update(val)
-        loss_seg, loss_vertex, precision, recall = [
+        loss_seg, loss_vertex, precision, recall, loss1, loss2, loss3 = [
             torch.mean(val)
-            for val in (loss_seg, loss_vertex, precision, recall)
+            for val in (loss_seg, loss_vertex, precision, recall, loss1, loss2, loss3)
         ]
-        vals = (loss_seg, loss_vertex, precision, recall)
+        vals = (loss_seg, loss_vertex, precision, recall, loss1, loss2, loss3)
         for rec, val in zip(recs, vals):
             rec.update(val)
 
 
         loss = loss1 + train_cfg['beta'] * loss2 + train_cfg['gamma'] * loss3
-        loss = torch.mean(loss)
+        #loss = torch.mean(loss)
 
         optimizer.zero_grad()
         loss.backward()
@@ -295,15 +298,17 @@ def val(net,
             ]
 
         with torch.no_grad():
-            seg_pred, vertex_pred, loss_seg, loss_vertex, precision, recall, _, _, _ = net(
-                image, mask, vertex, vertex_weights)
+            # seg_pred, vertex_pred, loss_seg, loss_vertex, precision, recall, _, _, _ = net(
+            #     image, mask, vertex, vertex_weights)
+            seg_pred, vertex_pred, loss_seg, loss_vertex, precision, recall, loss1, loss2, loss3 = net(
+            image, mask, image_render, vertex, vertex_weights)
 
             loss_seg, loss_vertex, precision, recall = [
                 torch.mean(val)
-                for val in (loss_seg, loss_vertex, precision, recall)
+                for val in (loss_seg, loss_vertex, precision, recall, loss1, loss2, loss3)
             ]
 
-            vals = [loss_seg, loss_vertex, precision, recall]
+            vals = [loss_seg, loss_vertex, precision, recall, loss1, loss2, loss3]
             for rec, val in zip(recs, vals):
                 rec.update(val)
 
