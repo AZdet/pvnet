@@ -161,7 +161,6 @@ class MappingNetWrapper(nn.Module):
         super(MappingNetWrapper, self).__init__()
         self.net = net
 
-    @staticmethod
     def computer_loss(self, seg_pred, vertex_pred, mask, vertex,
                       vertex_weights, vertex_loss_ratio):
         criterion = nn.CrossEntropyLoss(reduce=False)
