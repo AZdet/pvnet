@@ -35,7 +35,11 @@ class NetWrapper(nn.Module):
         self.criterion = nn.CrossEntropyLoss(reduce=False)
 
     def forward(self, image, mask, vertex, vertex_weights):
+<<<<<<< HEAD
         seg_pred, vertex_pred = self.net(image, mode="mapped")
+=======
+        seg_pred, vertex_pred = self.net(image, 'mapped')
+>>>>>>> 2c722555563b8a77e36b246d82747754cf8dfae7
         loss_seg = self.criterion(seg_pred, mask)
         loss_seg = torch.mean(loss_seg.view(loss_seg.shape[0], -1), 1)
         loss_vertex = smooth_l1_loss(vertex_pred, vertex, vertex_weights, reduce=False)
@@ -110,9 +114,10 @@ def demo():
 
     optimizer = optim.Adam(net.parameters(), lr=train_cfg['lr'])
     model_dir = os.path.join(cfg.MODEL_DIR, "cat_demo")
-    load_model(net.module.net, optimizer, model_dir, args.load_epoch)
+    #load_model(net.module.net, optimizer, model_dir, args.load_epoch)
     data, points_3d, bb8_3d = read_data()
     image, mask, vertex, vertex_weights, pose, corner_target = [d.unsqueeze(0).cuda() for d in data]
+<<<<<<< HEAD
     net(image, mask, vertex, vertex_weights)
     print('done')
     # seg_pred, vertex_pred, loss_seg, loss_vertex, precision, recall = net(image, mask, vertex, vertex_weights)
@@ -129,6 +134,22 @@ def demo():
     # bb8_2d_gt = projector.project(bb8_3d, pose[0].detach().cpu().numpy(), 'linemod')
     # image = imagenet_to_uint8(image.detach().cpu().numpy())[0]
     # visualize_bounding_box(image[None, ...], bb8_2d_pred[None, None, ...], bb8_2d_gt[None, None, ...])
+=======
+    seg_pred, vertex_pred, loss_seg, loss_vertex, precision, recall = net(image, mask, vertex, vertex_weights)
+    raise TypeError
+    eval_net = DataParallel(EvalWrapper().cuda())
+    corner_pred = eval_net(seg_pred, vertex_pred).cpu().detach().numpy()[0]
+    camera_matrix = np.array([[572.4114, 0., 325.2611],
+                              [0., 573.57043, 242.04899],
+                              [0., 0., 1.]])
+    pose_pred = pnp(points_3d, corner_pred, camera_matrix)
+
+    projector = Projector()
+    bb8_2d_pred = projector.project(bb8_3d, pose_pred, 'linemod')
+    bb8_2d_gt = projector.project(bb8_3d, pose[0].detach().cpu().numpy(), 'linemod')
+    image = imagenet_to_uint8(image.detach().cpu().numpy())[0]
+    visualize_bounding_box(image[None, ...], bb8_2d_pred[None, None, ...], bb8_2d_gt[None, None, ...])
+>>>>>>> 2c722555563b8a77e36b246d82747754cf8dfae7
 
 
 if __name__ == "__main__":

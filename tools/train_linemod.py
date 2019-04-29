@@ -175,21 +175,26 @@ class MappingNetWrapper(nn.Module):
 
     def forward(self, image, mask, image_render, vertex, vertex_weights):
         ratio = train_cfg['vertex_loss_ratio']
+<<<<<<< HEAD
         seq_pred, vertex_pred = self.net(image_render, 'direct')
         loss1, _, _ = self.compute_loss(seq_pred, vertex_pred, mask, vertex,
+=======
+        seg_pred, vertex_pred = self.net(image_render, 'direct')
+        loss1, _, _ = self.compute_loss(seg_pred, vertex_pred, mask, vertex,
+>>>>>>> 2c722555563b8a77e36b246d82747754cf8dfae7
                                    vertex_weights, ratio)
-        seq_pred_mapped, vertex_pred_mapped = self.net(image, 'mapped')
-        loss2, loss_seg, loss_vertex = self.compute_loss(seq_pred_mapped,
+        seg_pred_mapped, vertex_pred_mapped = self.net(image, 'mapped')
+        loss2, loss_seg, loss_vertex = self.compute_loss(seg_pred_mapped,
                                                     vertex_pred_mapped, mask,
                                                     vertex, vertex_weights,
                                                     ratio)
         no_mapping_render = self.net(image_render, 'before_mapping')
         mapping_result = self.net(image, 'mapping_result')
-        square_loss = nn.MSECriterion()
+        square_loss = nn.MSELoss()
         loss3 = square_loss(no_mapping_render, mapping_result)
-
         precision, recall = compute_precision_recall(seg_pred_mapped, mask)
-
+        loss1 = torch.mean(loss1)
+        loss2 = torch.mean(loss2)
         return seg_pred_mapped, vertex_pred_mapped, loss_seg, loss_vertex, precision, recall, loss1, loss2, loss3
 
 
@@ -226,7 +231,9 @@ def train(net, optimizer, dataloader, epoch):
         for rec, val in zip(recs, vals):
             rec.update(val)
 
+
         loss = loss1 + train_cfg['beta'] * loss2 + train_cfg['gamma'] * loss3
+        loss = torch.mean(loss)
 
         optimizer.zero_grad()
         loss.backward()
@@ -429,7 +436,7 @@ def train_net():
             print('testing occluded linemod ...')
             occ_image_db = OcclusionLineModImageDB(args.linemod_cls)
             occ_test_db = occ_image_db.test_real_set
-            occ_test_set = LineModDatasetRealAug(occ_test_db,
+            occ_test_set = LineModDatasetAug(occ_test_db,
                                                  cfg.OCCLUSION_LINEMOD,
                                                  vote_type,
                                                  augment=False,
