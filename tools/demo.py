@@ -35,7 +35,7 @@ class NetWrapper(nn.Module):
         self.criterion = nn.CrossEntropyLoss(reduce=False)
 
     def forward(self, image, mask, vertex, vertex_weights):
-        seg_pred, vertex_pred = self.net(image)
+        seg_pred, vertex_pred = self.net(image, 'mapped')
         loss_seg = self.criterion(seg_pred, mask)
         loss_seg = torch.mean(loss_seg.view(loss_seg.shape[0], -1), 1)
         loss_vertex = smooth_l1_loss(vertex_pred, vertex, vertex_weights, reduce=False)
@@ -104,17 +104,17 @@ def read_data():
 
 
 def demo():
-    net = Resnet18_8s(ver_dim=vote_num * 2, seg_dim=2)
+    net = Resnet18_8s_modified(ver_dim=vote_num * 2, seg_dim=2)
     net = NetWrapper(net).cuda()
     net = DataParallel(net)
 
     optimizer = optim.Adam(net.parameters(), lr=train_cfg['lr'])
     model_dir = os.path.join(cfg.MODEL_DIR, "cat_demo")
-    load_model(net.module.net, optimizer, model_dir, args.load_epoch)
+    #load_model(net.module.net, optimizer, model_dir, args.load_epoch)
     data, points_3d, bb8_3d = read_data()
     image, mask, vertex, vertex_weights, pose, corner_target = [d.unsqueeze(0).cuda() for d in data]
     seg_pred, vertex_pred, loss_seg, loss_vertex, precision, recall = net(image, mask, vertex, vertex_weights)
-
+    raise TypeError
     eval_net = DataParallel(EvalWrapper().cuda())
     corner_pred = eval_net(seg_pred, vertex_pred).cpu().detach().numpy()[0]
     camera_matrix = np.array([[572.4114, 0., 325.2611],
