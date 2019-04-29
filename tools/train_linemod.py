@@ -161,8 +161,7 @@ class MappingNetWrapper(nn.Module):
         super(MappingNetWrapper, self).__init__()
         self.net = net
 
-    @staticmethod
-    def computer_loss(self, seg_pred, vertex_pred, mask, vertex,
+    def compute_loss(self, seg_pred, vertex_pred, mask, vertex,
                       vertex_weights, vertex_loss_ratio):
         criterion = nn.CrossEntropyLoss(reduce=False)
         loss_seg = criterion(seg_pred, mask)
@@ -177,7 +176,7 @@ class MappingNetWrapper(nn.Module):
     def forward(self, image, mask, image_render, vertex, vertex_weights):
         ratio = train_cfg['vertex_loss_ratio']
         seq_pred, vertex_pred = self.net(image_render, 'direct')
-        loss1, _, _ = self.compute_loss(seq_pred, vertex_pred, mask, verterx_render,
+        loss1, _, _ = self.compute_loss(seq_pred, vertex_pred, mask, vertex,
                                    vertex_weights, ratio)
         seq_pred_mapped, vertex_pred_mapped = self.net(image, 'mapped')
         loss2, loss_seg, loss_vertex = self.compute_loss(seq_pred_mapped,
