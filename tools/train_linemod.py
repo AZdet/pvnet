@@ -175,13 +175,8 @@ class MappingNetWrapper(nn.Module):
 
     def forward(self, image, mask, image_render, vertex, vertex_weights):
         ratio = train_cfg['vertex_loss_ratio']
-<<<<<<< HEAD
-        seq_pred, vertex_pred = self.net(image_render, 'direct')
-        loss1, _, _ = self.compute_loss(seq_pred, vertex_pred, mask, vertex,
-=======
         seg_pred, vertex_pred = self.net(image_render, 'direct')
         loss1, _, _ = self.compute_loss(seg_pred, vertex_pred, mask, vertex,
->>>>>>> 2c722555563b8a77e36b246d82747754cf8dfae7
                                    vertex_weights, ratio)
         seg_pred_mapped, vertex_pred_mapped = self.net(image, 'mapped')
         loss2, loss_seg, loss_vertex = self.compute_loss(seg_pred_mapped,
@@ -291,11 +286,11 @@ def val(net,
     net.eval()
     for idx, data in enumerate(dataloader):
         if use_camera_intrinsic:
-            image, mask, vertex, vertex_weights, pose, corner_target, Ks = [
+            image, mask, image_render, mask_render, vertex, vertex_weights, pose, corner_target, Ks = [
                 d.cuda() for d in data
             ]
         else:
-            image, mask, vertex, vertex_weights, pose, corner_target = [
+            image, mask, image_render, mask_render, vertex, vertex_weights, pose, corner_target = [
                 d.cuda() for d in data
             ]
 
