@@ -161,7 +161,7 @@ class MappingNetWrapper(nn.Module):
         super(MappingNetWrapper, self).__init__()
         self.net = net
 
-    def computer_loss(self, seg_pred, vertex_pred, mask, vertex,
+    def compute_loss(self, seg_pred, vertex_pred, mask, vertex,
                       vertex_weights, vertex_loss_ratio):
         criterion = nn.CrossEntropyLoss(reduce=False)
         loss_seg = criterion(seg_pred, mask)
@@ -187,9 +187,9 @@ class MappingNetWrapper(nn.Module):
         mapping_result = self.net(image, 'mapping_result')
         square_loss = nn.MSELoss()
         loss3 = square_loss(no_mapping_render, mapping_result)
-
         precision, recall = compute_precision_recall(seg_pred_mapped, mask)
-
+        loss1 = torch.mean(loss1)
+        loss2 = torch.mean(loss2)
         return seg_pred_mapped, vertex_pred_mapped, loss_seg, loss_vertex, precision, recall, loss1, loss2, loss3
 
 
@@ -226,7 +226,9 @@ def train(net, optimizer, dataloader, epoch):
         for rec, val in zip(recs, vals):
             rec.update(val)
 
+
         loss = loss1 + train_cfg['beta'] * loss2 + train_cfg['gamma'] * loss3
+        loss = torch.mean(loss)
 
         optimizer.zero_grad()
         loss.backward()
