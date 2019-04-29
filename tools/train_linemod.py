@@ -186,7 +186,7 @@ class MappingNetWrapper(nn.Module):
                                                     ratio)
         no_mapping_render = self.net(image_render, 'before_mapping')
         mapping_result = self.net(image, 'mapping_result')
-        square_loss = nn.MSECriterion()
+        square_loss = nn.MSELoss()
         loss3 = square_loss(no_mapping_render, mapping_result)
 
         precision, recall = compute_precision_recall(seg_pred_mapped, mask)
