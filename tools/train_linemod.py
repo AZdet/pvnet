@@ -176,11 +176,16 @@ class MappingNetWrapper(nn.Module):
 
     def forward(self, image, mask, image_render, vertex, vertex_weights):
         ratio = train_cfg['vertex_loss_ratio']
+<<<<<<< HEAD
         seq_pred, vertex_pred = self.net(image_render, 'direct')
         loss1, _, _ = self.compute_loss(seq_pred, vertex_pred, mask, vertex,
+=======
+        seg_pred, vertex_pred = self.net(image_render, 'direct')
+        loss1, _, _ = self.compute_loss(seg_pred, vertex_pred, mask, vertex,
+>>>>>>> 0ebd6b2d9a67d9d10029d998d30119c427f739a1
                                    vertex_weights, ratio)
-        seq_pred_mapped, vertex_pred_mapped = self.net(image, 'mapped')
-        loss2, loss_seg, loss_vertex = self.compute_loss(seq_pred_mapped,
+        seg_pred_mapped, vertex_pred_mapped = self.net(image, 'mapped')
+        loss2, loss_seg, loss_vertex = self.compute_loss(seg_pred_mapped,
                                                     vertex_pred_mapped, mask,
                                                     vertex, vertex_weights,
                                                     ratio)
@@ -430,7 +435,7 @@ def train_net():
             print('testing occluded linemod ...')
             occ_image_db = OcclusionLineModImageDB(args.linemod_cls)
             occ_test_db = occ_image_db.test_real_set
-            occ_test_set = LineModDatasetRealAug(occ_test_db,
+            occ_test_set = LineModDatasetAug(occ_test_db,
                                                  cfg.OCCLUSION_LINEMOD,
                                                  vote_type,
                                                  augment=False,
