@@ -303,7 +303,7 @@ def val(net,
             seg_pred, vertex_pred, loss_seg, loss_vertex, precision, recall, loss1, loss2, loss3 = net(
             image, mask, image_render, vertex, vertex_weights)
 
-            loss_seg, loss_vertex, precision, recall = [
+            loss_seg, loss_vertex, precision, recall, loss1, loss2, loss3 = [
                 torch.mean(val)
                 for val in (loss_seg, loss_vertex, precision, recall, loss1, loss2, loss3)
             ]
