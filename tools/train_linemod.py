@@ -639,11 +639,12 @@ def transfer_train_net():
     motion_model = train_cfg['motion_model']
     print('motion state {}'.format(motion_model))
     # first load trained cat model
-    load_model(net.module.net, optimizer, load_model_dir)
+    # load_model(net.module.net, optimizer, load_model_dir)
     
     if args.test_model:
         net = Resnet18_8s_modified(ver_dim=vote_num * 2, seg_dim=2)
         net = MappingNetWrapper(net)
+        net = DataParallel(net).cuda()
         begin_epoch = load_model(net.module.net, optimizer, model_dir,
                                  args.load_epoch)
 
@@ -669,9 +670,12 @@ def transfer_train_net():
 
     else:
         begin_epoch = 0
-        if train_cfg['resume']:
+        if train_cfg['resume']: # first time should load from load_model_dir
             begin_epoch = load_model(net.module.net, optimizer, model_dir)
-
+        if begin_epoch == 0:
+            print('load first model')
+            load_model(net.module.net, optimizer, load_model_dir)
+            
         image_db = LineModImageDB(
             args.linemod_cls,
             has_fuse_set=False,  #train_cfg['use_fuse'],
