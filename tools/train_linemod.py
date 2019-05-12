@@ -432,52 +432,6 @@ def train_net():
             prefix = 'test' if args.use_test_set else 'val'
             val(net, test_loader, begin_epoch, prefix, use_motion=motion_model)
 
-        # if args.occluded and args.linemod_cls in cfg.occ_linemod_cls_names:
-        #     print('testing occluded linemod ...')
-        #     occ_image_db = OcclusionLineModImageDB(args.linemod_cls)
-        #     occ_test_db = occ_image_db.test_real_set
-        #     occ_test_set = LineModDatasetAug(occ_test_db,
-        #                                          cfg.OCCLUSION_LINEMOD,
-        #                                          vote_type,
-        #                                          augment=False,
-        #                                          use_motion=motion_model)
-        #     occ_test_sampler = SequentialSampler(occ_test_set)
-        #     occ_test_batch_sampler = ImageSizeBatchSampler(
-        #         occ_test_sampler, train_cfg['test_batch_size'], False)
-        #     occ_test_loader = DataLoader(occ_test_set,
-        #                                  batch_sampler=occ_test_batch_sampler,
-        #                                  num_workers=0)
-        #     prefix = 'occ_test' if args.use_test_set else 'occ_val'
-        #     val(net,
-        #         occ_test_loader,
-        #         begin_epoch,
-        #         prefix,
-        #         use_motion=motion_model)
-
-        # if args.truncated:
-        #     print('testing truncated linemod ...')
-        #     trun_image_db = TruncatedLineModImageDB(args.linemod_cls)
-        #     print(len(trun_image_db.set))
-        #     trun_image_set = LineModDatasetRealAug(trun_image_db.set,
-        #                                            cfg.LINEMOD,
-        #                                            vote_type,
-        #                                            augment=False,
-        #                                            use_intrinsic=True,
-        #                                            use_motion=motion_model)
-        #     trun_test_sampler = SequentialSampler(trun_image_set)
-        #     trun_test_batch_sampler = ImageSizeBatchSampler(
-        #         trun_test_sampler, train_cfg['test_batch_size'], False)
-        #     trun_test_loader = DataLoader(
-        #         trun_image_set,
-        #         batch_sampler=trun_test_batch_sampler,
-        #         num_workers=0)
-        #     prefix = 'trun_test'
-        #     val(net,
-        #         trun_test_loader,
-        #         begin_epoch,
-        #         prefix,
-        #         True,
-        #         use_motion=motion_model)
 
     else:
         begin_epoch = 0
